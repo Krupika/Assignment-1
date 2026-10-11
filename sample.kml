@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Placemark id="sample-area">
+      <name>Sample area</name>
+      <ExtendedData><Data name="category"><value>demonstration</value></Data></ExtendedData>
+      <Polygon>
+        <outerBoundaryIs><LinearRing><coordinates>
+          -73.001,40.0 -73.0,40.0 -73.0,40.001 -73.001,40.001 -73.001,40.0
+        </coordinates></LinearRing></outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+    <Placemark id="sample-route">
+      <name>Sample route</name>
+      <LineString><coordinates>-73.002,40.0 -73.001,40.0</coordinates></LineString>
+    </Placemark>
+    <Placemark id="sample-location">
+      <name>Sample location</name>
+      <Point><coordinates>-73.0,40.0</coordinates></Point>
+    </Placemark>
+  </Document>
+</kml>

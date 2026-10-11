@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f2f5f1">
+  <title>Fieldnote | Geospatial measurements</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172e2c;
+      --muted: #657672;
+      --paper: #f2f5f1;
+      --surface: #fffefa;
+      --line: #dce4dc;
+      --green: #176b52;
+      --green-dark: #104d3e;
+      --lime: #d6ef82;
+      --coral: #df7156;
+      --danger: #a63e32;
+      --shadow: 0 20px 55px rgba(27, 54, 47, .08);
+      font-family: "Avenir Next", "Gill Sans", "Trebuchet MS", sans-serif;
+      font-synthesis: none;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      min-width: 320px;
+      margin: 0;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: linear-gradient(rgba(23, 46, 44, .035) 1px, transparent 1px), linear-gradient(90deg, rgba(23, 46, 44, .035) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    button, input { font: inherit; }
+    button:focus-visible, input:focus-visible, .drop-area:focus-visible { outline: 3px solid #e59b65; outline-offset: 3px; }
+    .shell { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
+    .topbar { height: 76px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(23, 46, 44, .12); }
+    .brand { display: flex; align-items: center; gap: 11px; color: var(--ink); font-weight: 750; letter-spacing: .02em; }
+    .brand-mark { width: 31px; height: 31px; display: grid; place-items: center; color: var(--green-dark); background: var(--lime); border-radius: 9px 9px 9px 2px; }
+    .brand-mark svg { width: 19px; height: 19px; }
+    .api-link { color: var(--muted); font-size: 13px; text-decoration: none; border-bottom: 1px solid transparent; }
+    .api-link:hover { color: var(--green-dark); border-color: currentColor; }
+
+    main { padding: 54px 0 80px; }
+    .intro { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 28px; margin-bottom: 29px; animation: arrive .45s ease-out both; }
+    .eyebrow { display: flex; align-items: center; gap: 9px; margin: 0 0 13px; color: var(--green); font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    .eyebrow::before { content: ""; width: 22px; height: 2px; background: var(--coral); }
+    h1 { max-width: 620px; margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 52px; font-weight: 500; line-height: 1.04; letter-spacing: 0; }
+    .intro-copy { max-width: 580px; margin: 15px 0 0; color: var(--muted); font-size: 15px; line-height: 1.6; }
+    .coordinate-stamp { min-width: 152px; padding: 12px 14px; border-left: 2px solid var(--coral); color: var(--muted); font-size: 11px; line-height: 1.65; }
+    .coordinate-stamp strong { display: block; color: var(--ink); font-size: 12px; }
+
+    .workspace { display: grid; grid-template-columns: 360px minmax(0, 1fr); align-items: start; gap: 18px; }
+    .upload-panel, .results-panel { background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+    .upload-panel { padding: 23px; animation: arrive .5s .06s ease-out both; }
+    .panel-label { display: flex; align-items: center; gap: 9px; margin: 0 0 18px; font-size: 13px; font-weight: 750; }
+    .step { width: 23px; height: 23px; display: inline-grid; place-items: center; border-radius: 50%; background: #e8f1e8; color: var(--green); font-size: 11px; }
+    .drop-area { min-height: 228px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 16px; border: 1px dashed #9fb4a7; background: #f7f9f5; text-align: center; transition: background .18s ease, border-color .18s ease, transform .18s ease; }
+    .drop-area.is-dragging { transform: translateY(-2px); background: #edf5e8; border-color: var(--green); }
+    .upload-icon { width: 52px; height: 52px; display: grid; place-items: center; margin-bottom: 15px; color: var(--green); background: #e9f1e7; border-radius: 50%; }
+    .upload-icon svg { width: 25px; height: 25px; }
+    .drop-title { margin: 0; font-size: 14px; font-weight: 700; }
+    .drop-hint { margin: 6px 0 15px; color: var(--muted); font-size: 12px; }
+    .choose-button, .process-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 39px; padding: 0 14px; border: 0; cursor: pointer; font-size: 12px; font-weight: 750; transition: background .15s ease, transform .15s ease; }
+    .choose-button { color: var(--green-dark); background: #e4efdf; }
+    .choose-button:hover { background: #d6e8ce; }
+    .choose-button svg, .process-button svg { width: 15px; height: 15px; }
+    .file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
+    .selected-file { display: none; align-items: center; gap: 11px; margin-top: 14px; padding: 11px; border: 1px solid var(--line); background: #fff; }
+    .selected-file.visible { display: flex; }
+    .file-glyph { flex: 0 0 auto; width: 34px; height: 36px; display: grid; place-items: center; color: var(--green); background: #edf4e9; }
+    .file-glyph svg { width: 19px; height: 19px; }
+    .file-copy { min-width: 0; flex: 1; }
+    .file-name { overflow: hidden; margin: 0; font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .file-size { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+    .remove-file { width: 30px; height: 30px; display: grid; place-items: center; color: var(--muted); background: transparent; border: 0; cursor: pointer; }
+    .remove-file:hover { color: var(--danger); background: #f8eeeb; }
+    .remove-file svg { width: 16px; height: 16px; }
+    .process-button { width: 100%; margin-top: 14px; color: white; background: var(--green); }
+    .process-button:hover:not(:disabled) { transform: translateY(-1px); background: var(--green-dark); }
+    .process-button:disabled { cursor: not-allowed; opacity: .45; }
+    .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.45); border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite; }
+    .upload-note { margin: 14px 0 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+    .upload-note b { color: var(--ink); font-weight: 700; }
+
+    .results-panel { min-height: 374px; overflow: hidden; animation: arrive .55s .12s ease-out both; }
+    .results-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 19px 21px; border-bottom: 1px solid var(--line); }
+    .results-head .panel-label { margin: 0; }
+    .state-pill { display: inline-flex; align-items: center; gap: 7px; padding: 6px 9px; color: var(--muted); background: #f0f3ef; font-size: 10px; font-weight: 750; text-transform: uppercase; letter-spacing: .07em; }
+    .state-dot { width: 6px; height: 6px; border-radius: 50%; background: #9eaaa2; }
+    .state-pill.ready { color: var(--green-dark); background: #e9f2e6; }
+    .state-pill.ready .state-dot { background: #32956e; }
+    .summary { display: none; grid-template-columns: repeat(3, minmax(0, 1fr)); border-bottom: 1px solid var(--line); }
+    .summary.visible { display: grid; }
+    .summary-cell { padding: 16px 20px; border-right: 1px solid var(--line); }
+    .summary-cell:last-child { border-right: 0; }
+    .summary-label { margin: 0 0 7px; color: var(--muted); font-size: 10px; font-weight: 750; letter-spacing: .07em; text-transform: uppercase; }
+    .summary-value { overflow: hidden; margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 22px; text-overflow: ellipsis; white-space: nowrap; }
+    .summary-unit { margin-left: 3px; color: var(--muted); font-family: inherit; font-size: 11px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { padding: 11px 15px; color: var(--muted); background: #f8f9f6; border-bottom: 1px solid var(--line); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+    td { max-width: 230px; padding: 13px 15px; border-bottom: 1px solid #edf0eb; font-size: 11px; vertical-align: top; }
+    tr:last-child td { border-bottom: 0; }
+    .geometry-tag { display: inline-flex; align-items: center; gap: 6px; color: var(--green-dark); font-weight: 700; white-space: nowrap; }
+    .geometry-tag::before { content: ""; width: 7px; height: 7px; background: var(--coral); border-radius: 2px; transform: rotate(45deg); }
+    .measurement { font-weight: 750; white-space: nowrap; }
+    .measurement-empty { color: #929d96; font-weight: 500; }
+    .feature-id { display: block; max-width: 110px; overflow: hidden; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; }
+    .property-details summary { color: var(--green); cursor: pointer; font-size: 11px; font-weight: 700; }
+    .property-details pre { max-width: 220px; overflow: auto; margin: 8px 0 0; padding: 8px; color: var(--muted); background: #f6f7f4; font: 10px/1.5 Consolas, monospace; white-space: pre-wrap; }
+    .empty-state { min-height: 288px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 26px; text-align: center; }
+    .empty-orbit { position: relative; width: 100px; height: 82px; margin-bottom: 16px; }
+    .empty-orbit::before, .empty-orbit::after { content: ""; position: absolute; inset: 7px 12px; border: 1px solid #c9d8c9; border-radius: 50%; transform: rotate(-24deg); }
+    .empty-orbit::after { inset: 17px 1px; transform: rotate(28deg); }
+    .empty-pin { position: absolute; z-index: 1; top: 29px; left: 43px; width: 16px; height: 16px; border: 4px solid var(--surface); border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 1px var(--coral); }
+    .empty-title { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 21px; font-weight: 500; }
+    .empty-copy { max-width: 290px; margin: 7px 0 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .error-message { display: none; margin: 14px 0 0; padding: 10px 12px; color: var(--danger); background: #fbefec; font-size: 11px; line-height: 1.45; }
+    .error-message.visible { display: block; }
+    .footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 17px; color: var(--muted); font-size: 10px; }
+    .footer span:last-child { text-align: right; }
+    @keyframes arrive { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 800px) {
+      .shell { width: min(100% - 32px, 620px); }
+      main { padding-top: 36px; }
+      .intro { grid-template-columns: 1fr; gap: 15px; }
+      .coordinate-stamp { display: none; }
+      .workspace { grid-template-columns: 1fr; }
+      .drop-area { min-height: 200px; }
+    }
+    @media (max-width: 480px) {
+      .shell { width: calc(100% - 24px); }
+      .topbar { height: 62px; }
+      main { padding-top: 28px; }
+      h1 { font-size: 38px; }
+      .upload-panel { padding: 17px; }
+      .results-head { padding: 16px; }
+      .summary-cell { padding: 13px 11px; }
+      .summary-value { font-size: 18px; }
+      td, th { padding-right: 10px; padding-left: 10px; }
+      .footer { flex-direction: column; }
+      .footer span:last-child { text-align: left; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="shell topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7.5 9 5l6 2.5L20 5v11.5L15 19l-6-2.5L4 19V7.5Z"/><path d="M9 5v11.5M15 7.5V19"/><circle cx="12" cy="11" r="1.5" fill="currentColor"/></svg>
+      </span>
+      <span>FIELDNOTE <span style="color:var(--muted);font-weight:500">/ GEO</span></span>
+    </div>
+    <a class="api-link" href="/docs">API reference <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <main class="shell">
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">Geospatial workspace</p>
+        <h1 id="page-title">Measure the ground beneath your data.</h1>
+        <p class="intro-copy">Drop in a KML or zipped Shapefile. We’ll read its features and calculate area or length in a projected coordinate system.</p>
+      </div>
+      <div class="coordinate-stamp"><strong>COORDINATE AWARE</strong>Measurements in metres<br>CRS transformation included</div>
+    </section>
+
+    <section class="workspace" aria-label="Upload and measurement results">
+      <form id="upload-form" class="upload-panel">
+        <p class="panel-label"><span class="step">01</span> Choose a geospatial file</p>
+        <div id="drop-area" class="drop-area" tabindex="0" role="button" aria-label="Choose or drop a KML or zipped Shapefile">
+          <span class="upload-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
+          </span>
+          <p class="drop-title">Drop your file here</p>
+          <p class="drop-hint">or browse from your computer</p>
+          <button id="browse-button" type="button" class="choose-button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7.5h6l2 2h8v9H4z"/><path d="M12 12v4m-2-2h4"/></svg>
+            Browse files
+          </button>
+        </div>
+        <input id="file-input" class="file-input" type="file" accept=".kml,.zip,application/vnd.google-earth.kml+xml,application/zip" aria-label="Select KML or zipped Shapefile">
+        <div id="selected-file" class="selected-file">
+          <span class="file-glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 3.5h8l4 4V20H6z"/><path d="M14 3.5V8h4M9 12h6M9 15.5h6"/></svg></span>
+          <div class="file-copy"><p id="file-name" class="file-name"></p><p id="file-size" class="file-size"></p></div>
+          <button id="remove-button" class="remove-file" type="button" aria-label="Remove selected file" title="Remove file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m7 7 10 10M17 7 7 17"/></svg></button>
+        </div>
+        <button id="process-button" class="process-button" type="submit" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h13m-5-5 5 5-5 5"/></svg>
+          Upload and measure
+        </button>
+        <p class="upload-note"><b>Supported:</b> .kml or .zip with .shp, .shx, and .dbf files<br><b>Limit:</b> 50 MB per upload</p>
+        <p id="error-message" class="error-message" role="alert"></p>
+      </form>
+
+      <section class="results-panel" aria-labelledby="results-title" aria-live="polite">
+        <div class="results-head">
+          <p id="results-title" class="panel-label"><span class="step">02</span> Feature measurements</p>
+          <span id="state-pill" class="state-pill"><span class="state-dot"></span><span id="state-text">Waiting for file</span></span>
+        </div>
+        <div id="empty-state" class="empty-state">
+          <div class="empty-orbit" aria-hidden="true"><span class="empty-pin"></span></div>
+          <p class="empty-title">Your results will land here.</p>
+          <p class="empty-copy">Choose a geospatial file to see its coordinate system, feature count, and measurements.</p>
+        </div>
+        <div id="result-content" hidden>
+          <div class="summary">
+            <div class="summary-cell"><p class="summary-label">Features</p><p id="feature-count" class="summary-value">0</p></div>
+            <div class="summary-cell"><p class="summary-label">Source CRS</p><p id="source-crs" class="summary-value">—</p></div>
+            <div class="summary-cell"><p class="summary-label">Measured area</p><p class="summary-value"><span id="total-area">—</span><span class="summary-unit">m²</span></p></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th scope="col">Feature</th><th scope="col">Geometry</th><th scope="col">Measurement</th><th scope="col">Attributes</th></tr></thead>
+              <tbody id="feature-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </section>
+    <footer class="footer"><span>Local processing · Files are held in memory until the server restarts</span><span>Area in m² · Length in m</span></footer>
+  </main>
+
+  <script>
+    const fileInput = document.querySelector("#file-input");
+    const dropArea = document.querySelector("#drop-area");
+    const selectedFilePanel = document.querySelector("#selected-file");
+    const processButton = document.querySelector("#process-button");
+    const errorMessage = document.querySelector("#error-message");
+    const statePill = document.querySelector("#state-pill");
+    const stateText = document.querySelector("#state-text");
+    let selectedFile = null;
+
+    document.querySelector("#browse-button").addEventListener("click", () => fileInput.click());
+    dropArea.addEventListener("click", (event) => {
+      if (event.target.closest("button")) return;
+      fileInput.click();
+    });
+    dropArea.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        fileInput.click();
+      }
+    });
+    fileInput.addEventListener("change", () => setFile(fileInput.files[0]));
+    document.querySelector("#remove-button").addEventListener("click", clearFile);
+
+    for (const eventName of ["dragenter", "dragover"]) {
+      dropArea.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropArea.classList.add("is-dragging");
+      });
+    }
+    for (const eventName of ["dragleave", "drop"]) {
+      dropArea.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropArea.classList.remove("is-dragging");
+      });
+    }
+    dropArea.addEventListener("drop", (event) => setFile(event.dataTransfer.files[0]));
+
+    function setFile(file) {
+      hideError();
+      if (!file) return;
+      const extension = file.name.split(".").pop().toLowerCase();
+      if (!["kml", "zip"].includes(extension)) {
+        showError("Choose a .kml file or a .zip archive containing a Shapefile.");
+        clearFile();
+        return;
+      }
+      if (file.size > 50 * 1024 * 1024) {
+        showError("This file is over the 50 MB upload limit.");
+        clearFile();
+        return;
+      }
+      selectedFile = file;
+      document.querySelector("#file-name").textContent = file.name;
+      document.querySelector("#file-size").textContent = formatBytes(file.size);
+      selectedFilePanel.classList.add("visible");
+      processButton.disabled = false;
+      statePill.classList.remove("ready");
+      stateText.textContent = "Ready to upload";
+    }
+
+    function clearFile() {
+      selectedFile = null;
+      fileInput.value = "";
+      selectedFilePanel.classList.remove("visible");
+      processButton.disabled = true;
+      if (stateText.textContent !== "Complete") stateText.textContent = "Waiting for file";
+    }
+
+    document.querySelector("#upload-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!selectedFile) return;
+      hideError();
+      setBusy(true);
+      stateText.textContent = "Processing file";
+      try {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        const uploadResponse = await fetch("/api/files/", { method: "POST", body: formData });
+        const metadata = await parseResponse(uploadResponse);
+        const measurementResponse = await fetch(`/api/files/${encodeURIComponent(metadata.id)}/measurements/`);
+        const measurements = await parseResponse(measurementResponse);
+        renderResults(metadata, measurements);
+        statePill.classList.add("ready");
+        stateText.textContent = "Complete";
+      } catch (error) {
+        showError(error.message || "The file could not be processed.");
+        statePill.classList.remove("ready");
+        stateText.textContent = "Upload failed";
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    async function parseResponse(response) {
+      let data;
+      try { data = await response.json(); } catch { throw new Error("The server returned an unreadable response."); }
+      if (!response.ok) throw new Error(data.detail || `Request failed (${response.status}).`);
+      return data;
+    }
+
+    function renderResults(metadata, measurements) {
+      const features = measurements.features || [];
+      const areaTotal = features.reduce((total, feature) => total + (feature.measurement?.area_m2 || 0), 0);
+      document.querySelector("#empty-state").hidden = true;
+      document.querySelector("#result-content").hidden = false;
+      document.querySelector(".summary").classList.add("visible");
+      document.querySelector("#feature-count").textContent = metadata.feature_count.toLocaleString();
+      document.querySelector("#source-crs").textContent = metadata.crs || "Unknown";
+      document.querySelector("#total-area").textContent = areaTotal ? formatNumber(areaTotal) : "—";
+      const rows = document.querySelector("#feature-rows");
+      rows.replaceChildren();
+      for (const feature of features) rows.append(makeFeatureRow(feature));
+    }
+
+    function makeFeatureRow(feature) {
+      const row = document.createElement("tr");
+      const idCell = document.createElement("td");
+      idCell.textContent = `#${feature.index + 1}`;
+      const idHint = document.createElement("span");
+      idHint.className = "feature-id";
+      idHint.textContent = String(feature.feature_id);
+      idHint.title = String(feature.feature_id);
+      idCell.append(idHint);
+
+      const geometryCell = document.createElement("td");
+      const geometry = document.createElement("span");
+      geometry.className = "geometry-tag";
+      geometry.textContent = feature.geometry_type;
+      geometryCell.append(geometry);
+
+      const measureCell = document.createElement("td");
+      const measurement = feature.measurement || {};
+      const measureValue = measurement.area_m2 != null
+        ? `${formatNumber(measurement.area_m2)} m²`
+        : measurement.length_m != null
+          ? `${formatNumber(measurement.length_m)} m`
+          : feature.measurement_status === "not_required" ? "Not required" : statusLabel(feature.measurement_status);
+      measureCell.textContent = measureValue;
+      measureCell.className = measurement.area_m2 != null || measurement.length_m != null ? "measurement" : "measurement measurement-empty";
+      measureCell.title = measurement.area_m2 != null || measurement.length_m != null
+        ? `Calculated in ${feature.measurement_crs || "projected CRS"}`
+        : feature.measurement_status || "No measurement";
+
+      const propertiesCell = document.createElement("td");
+      const properties = feature.properties || {};
+      if (Object.keys(properties).length) {
+        const details = document.createElement("details");
+        details.className = "property-details";
+        const summary = document.createElement("summary");
+        summary.textContent = `${Object.keys(properties).length} field${Object.keys(properties).length === 1 ? "" : "s"}`;
+        const pre = document.createElement("pre");
+        pre.textContent = JSON.stringify(properties, null, 2);
+        details.append(summary, pre);
+        propertiesCell.append(details);
+      } else {
+        propertiesCell.textContent = "—";
+      }
+      row.append(idCell, geometryCell, measureCell, propertiesCell);
+      return row;
+    }
+
+    function statusLabel(status) {
+      return ({ missing_crs: "CRS missing", missing_geometry: "No geometry", unsupported_geometry: "Not supported" })[status] || "No measurement";
+    }
+
+    function formatNumber(value) {
+      return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value);
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    }
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.classList.add("visible");
+    }
+
+    function hideError() {
+      errorMessage.textContent = "";
+      errorMessage.classList.remove("visible");
+    }
+
+    function setBusy(busy) {
+      processButton.disabled = busy || !selectedFile;
+      processButton.replaceChildren();
+      if (busy) {
+        const spinner = document.createElement("span");
+        spinner.className = "spinner";
+        processButton.append(spinner, document.createTextNode("Uploading and measuring…"));
+      } else {
+        processButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h13m-5-5 5 5-5 5"/></svg>Upload and measure';
+      }
+    }
+  </script>
+</body>
+</html>
